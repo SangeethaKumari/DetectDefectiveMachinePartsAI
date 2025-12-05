@@ -100,18 +100,65 @@ def inspect_machine_part_tool(image_path):
     """Tool that uses the classifier to check for defects."""
     return classifier.predict_defect(image_path)
 
+# ==========================================
+# NEW TOOL: The Guardrail Validator
+# ==========================================
+def validate_image_content_tool(filename):
+    """
+    Simulates an AI check to see if the image is actually a machine part.
+    """
+    # In a real system, this would call a lightweight classification model (like CLIP)
+    # to ask "Is this a machine part?".
+    
+    # SIMULATION LOGIC:
+    # We will reject filenames that sound like non-machine items for demonstration.
+    blocked_keywords = ['cat', 'dog', 'person', 'selfie', 'food', 'tree', 'landscape']
+    
+    filename_lower = filename.lower()
+    
+    # Check 1: Domain Validity
+    for keyword in blocked_keywords:
+        if keyword in filename_lower:
+            return {
+                "decision": "REJECT", 
+                "reason": f"Guardrail Violation: Image appears to contain '{keyword}', not machinery."
+            }
+            
+    # Check 2: File Quality (Simulation)
+    if "blur" in filename_lower:
+         return {
+                "decision": "REJECT", 
+                "reason": "Guardrail Violation: Image is too blurry for inspection."
+            }
+
+    return {"decision": "APPROVE", "reason": "Image verified as industrial component."}
+
+
 # --- Define the Agents ---
 
 # Agent 1: The Manager (Routes the request)
 manager_agent = Agent(
     name="Production_Manager",
-    role="Decide if the image needs inspection and assign to Inspector."
+    role=(
+        "Act as the Production Entry Gatekeeper. Triage incoming images. "
+        "Guardrails: 1. Reject non-machine images (people, animals, nature). "
+        "2. Reject blurry/bad quality images. "
+        "Only assign VALID images to the Quality_Inspector."
+    ),
+     # The Manager now uses the validator tool before deciding
+    tools=[validate_image_content_tool] 
 )
 
 # Agent 2: The Inspector (Performs the analysis)
 inspector_agent = Agent(
     name="Quality_Inspector",
-    role="Analyze machine part image for cracks, corrosion, or dents.",
+    role=(
+        "Act as a Senior Quality Assurance Specialist. "
+        "Conduct a rigorous visual inspection of the machine component. "
+        "Identify multiple simultaneous defects (Cracks, Corrosion, Dents) "
+        "using the classification tool and flag any part with >50% defect confidence "
+        "for immediate manual review."
+    ),
     tools=[inspect_machine_part_tool]
 )
 
@@ -135,16 +182,27 @@ def main():
         if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
             image_path = os.path.join(input_folder, filename)
             
-            # Step A: Manager receives the file
-            manager_decision = manager_agent.run(f"New image received: {filename}")
+            # Step A: Manager runs Guardrails
+        # In a real generic agent run(), the LLM would decide to call the tool.
+        # Here we manually simulate the Manager calling its tool:
+        print(f"[Agent: Production_Manager] Checking Guardrails for {filename}...")
+        manager_agent_result = manager_agent.run(filename)
+        
+        if manager_agent_result['decision'] == 'REJECT':
+            # STOP PROCESS HERE
+            print(f"🛑 BLOCKED: {manager_agent_result['reason']}")
+            print("Action: Image discarded. Inspector was NOT disturbed.")
+        else:
+            # Step B: Pass to Inspector
+            print(f"✅ APPROVED: {manager_agent_result['reason']}")
+            print("[Agent: Production_Manager] Routing to Quality_Inspector...")
             
-            # Step B: Manager delegates to Inspector
-            result = inspector_agent.run(image_path)
+            inspector_result = inspector_agent.run(image_path)
             
             # Step C: Output Result
-            print(f"\n✅ FINAL REPORT for {filename}:")
-            print(result)
-            print("-" * 30)
+            print(f"📋 FINAL REPORT: {inspector_result}")
+        
+        print("-" * 40)
 
 if __name__ == "__main__":
     main()
