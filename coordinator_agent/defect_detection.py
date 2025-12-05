@@ -4,6 +4,8 @@ import tensorflow as tf
 from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input, decode_predictions
 from tensorflow.keras.preprocessing import image
 from PIL import Image
+import random
+
 
 # ==========================================
 # PART 1: The "Kaggle-Trained" Classification Model
@@ -22,31 +24,49 @@ class DefectClassifier:
 
     def predict_defect(self, img_path):
         """
-        Loads an image and predicts the defect type.
+        Loads an image and predicts MULTIPLE defect types based on thresholds.
         """
         try:
-            # Preprocess image for the model
+            # Preprocess image (Standard Keras/TensorFlow flow)
             img = image.load_img(img_path, target_size=(224, 224))
             img_array = image.img_to_array(img)
             img_array = np.expand_dims(img_array, axis=0)
             img_array = preprocess_input(img_array)
 
-            # Get prediction (Simulation logic for demo purposes)
-            # In a real app: preds = self.model.predict(img_array)
-            # Here we just simulate a random defect detection for demonstration
-            import random
-            detected_defect = random.choice(self.defect_classes)
-            confidence = random.uniform(0.85, 0.99)
+            # --- SIMULATION LOGIC START ---
+            # In a real app, you would run: preds = self.model.predict(img_array)
+            # which would return an array like [0.1, 0.9, 0.85, 0.05, 0.0]
             
+            # We simulate a "Multi-Label" output where multiple things can be true.
+            # We generate a random confidence score (0.0 to 1.0) for EACH defect type.
+            simulated_confidences = {
+                defect: random.uniform(0.0, 1.0) for defect in self.defect_classes
+            }
+            # --- SIMULATION LOGIC END ---
+
+            # THRESHOLDING LOGIC:
+            # We only keep defects where the model is > 50% confident.
+            detected_issues = []
+            
+            for defect, score in simulated_confidences.items():
+                if score > 0.50:  # The Threshold
+                    detected_issues.append(f"{defect} ({score:.1%})")
+
+            # Determine final status
+            if not detected_issues:
+                status = "No Defect"
+                action = "None"
+            else:
+                status = ", ".join(detected_issues)
+                action = "Inspect manually - Multiple issues detected" if len(detected_issues) > 1 else "Inspect manually"
+
             return {
                 "filename": os.path.basename(img_path),
-                "defect_type": detected_defect,
-                "confidence": f"{confidence:.2%}",
-                "action_required": "Inspect manually" if detected_defect != 'No Defect' else "None"
+                "defect_type": status,
+                "action_required": action
             }
         except Exception as e:
             return {"error": str(e)}
-
 # ==========================================
 # PART 2: Google ADK Multi-Agent Structure
 # ==========================================
@@ -100,7 +120,7 @@ inspector_agent = Agent(
 # ==========================================
 def main():
     # 1. Setup Input Folder
-    input_folder = "machine_images_input"
+    input_folder = "/home/sangeethagsk/agent_bootcamp/DetectDefectiveMachinePartsAI/coordinator_agent/machine_images_input"
     if not os.path.exists(input_folder):
         os.makedirs(input_folder)
         print(f"Created folder '{input_folder}'. Please put images there.")
