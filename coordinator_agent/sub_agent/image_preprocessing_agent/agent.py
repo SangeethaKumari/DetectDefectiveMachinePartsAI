@@ -41,5 +41,6 @@ image_preprocessing_agent = LlmAgent(
     model=LiteLlm(model=OLLAMA_MODEL),
     description="Preprocesses the image for the image classification agent.",
     instruction="Resizes and normalizes image for the tensor model.",
+    tools=["image_preprocessing_tool"],
     output_key="image_preprocessed",
 )

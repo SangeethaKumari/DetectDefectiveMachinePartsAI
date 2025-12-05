@@ -17,6 +17,5 @@ detect_defective_machine_parts_agent = SequentialAgent(
     description="Complete newsletter generation pipeline: Collect → Validate → Analyze → Write → Edit -> Format",
 )
 
-# Run the async main function
-if __name__ == "__main__":
-    asyncio.run(main())
+# Main entry point for the newsletter generation system
+root_agent = detect_defective_machine_parts_agent
