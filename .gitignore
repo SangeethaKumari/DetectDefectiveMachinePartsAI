@@ -1,0 +1,14 @@
+# Ignore environment files
+*.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Build / documentation artifacts
+build/
+docs/_site/
+
+# OS files
+.DS_Store
+
