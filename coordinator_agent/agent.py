@@ -1,8 +1,22 @@
 from google.adk.agents.llm_agent import Agent
+from google.adk.tools import google_search
+from google.adk.runners import InMemoryRunner
+import asyncio
+import os
+from dotenv import load_dotenv
+from google.adk.agents.sequential_agent import SequentialAgent
+load_dotenv(override=True)
 
-root_agent = Agent(
-    model='gemini-2.5-flash',
-    name='root_agent',
-    description='A helpful assistant for user questions.',
-    instruction='Answer user questions to the best of your knowledge',
+
+detect_defective_machine_parts_agent = SequentialAgent(
+    name="DetectDefectiveMachineParts",
+    sub_agents=[
+        image_preprocessing_agent,
+        image_classification_agent,
+    ],
+    description="Complete newsletter generation pipeline: Collect → Validate → Analyze → Write → Edit -> Format",
 )
+
+# Run the async main function
+if __name__ == "__main__":
+    asyncio.run(main())
